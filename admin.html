@@ -614,6 +614,11 @@
                     <span class="info-label">Активных заданий</span>
                     <span class="info-value" id="activeTasks">0</span>
                 </div>
+                <div class="info-item">
+                    <button class="btn btn-secondary" onclick="logout()" style="padding: 0.5rem 1rem; font-size: 0.75rem;">
+                        🚪 Выход
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -634,6 +639,31 @@
             <div class="stat-card">
                 <span class="stat-value" id="totalPoints">0</span>
                 <span class="stat-label">Всего баллов выдано</span>
+            </div>
+        </div>
+
+        <!-- Session Info Card -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+                <h2 class="card-title">Информация о сессии</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Вход №</div>
+                    <div style="font-weight: 600;" id="loginCount">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Последний вход</div>
+                    <div style="font-weight: 600;" id="lastLogin">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Последняя активность</div>
+                    <div style="font-weight: 600;" id="lastActivity">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Статус сессии</div>
+                    <div style="font-weight: 600; color: var(--success);" id="sessionStatus">✓ Активна</div>
+                </div>
             </div>
         </div>
 
@@ -826,10 +856,54 @@
 
         function checkAuth() {
             const savedAdmin = loadFromStorage('current_admin');
-            if (savedAdmin) {
+            const sessionActive = loadFromStorage('admin_session_active');
+            
+            if (savedAdmin && sessionActive) {
+                // Проверяем, не истекла ли сессия (24 часа)
+                const lastActivity = loadFromStorage('admin_last_activity');
+                if (lastActivity) {
+                    const hoursSinceActivity = (Date.now() - new Date(lastActivity).getTime()) / (1000 * 60 * 60);
+                    
+                    if (hoursSinceActivity > 24) {
+                        // Сессия истекла
+                        logout();
+                        return;
+                    }
+                }
+                
                 adminState.currentAdmin = savedAdmin;
                 showAdminPanel();
+                
+                // Показываем приветствие
+                setTimeout(() => {
+                    showWelcomeMessage(savedAdmin.name);
+                }, 500);
             }
+        }
+
+        function showWelcomeMessage(name) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--accent);
+                color: var(--bg);
+                padding: 1rem 2rem;
+                border-radius: 8px;
+                font-weight: 600;
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
+            toast.textContent = `С возвращением, ${name}! 🔐`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         function authenticate() {
@@ -845,17 +919,54 @@
                     username: 'admin'
                 };
 
+                const existingAdmin = loadFromStorage('current_admin');
+                const loginCount = existingAdmin?.loginCount || 0;
+
                 adminState.currentAdmin = {
                     id: telegramUser.id,
                     name: telegramUser.first_name,
                     username: telegramUser.username,
-                    accessLevel: 'admin'
+                    accessLevel: 'admin',
+                    lastLogin: new Date().toISOString(),
+                    loginCount: loginCount + 1
                 };
 
                 saveToStorage('current_admin', adminState.currentAdmin);
+                saveToStorage('admin_session_active', true);
+                saveToStorage('admin_last_activity', new Date().toISOString());
+                
                 showAdminPanel();
+                startActivityTracking();
             } else {
                 alert('Неверный код доступа');
+            }
+        }
+
+        function startActivityTracking() {
+            const events = ['click', 'scroll', 'keypress', 'touchstart'];
+            
+            events.forEach(event => {
+                document.addEventListener(event, () => {
+                    saveToStorage('admin_last_activity', new Date().toISOString());
+                }, { passive: true });
+            });
+            
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    saveToStorage('admin_last_activity', new Date().toISOString());
+                }
+            }, 30000);
+        }
+
+        function logout() {
+            if (confirm('Вы уверены, что хотите выйти из админ-панели?')) {
+                saveToStorage('admin_session_active', false);
+                
+                document.getElementById('adminPanel').style.display = 'none';
+                document.getElementById('authScreen').style.display = 'flex';
+                
+                document.getElementById('adminCode').value = '';
+                adminState.currentAdmin = null;
             }
         }
 
@@ -864,12 +975,57 @@
             document.getElementById('adminPanel').style.display = 'block';
             document.getElementById('adminName').textContent = adminState.currentAdmin.name;
             
+            // Обновляем информацию о сессии
+            updateSessionInfo();
+            
             loadData();
             updateStats();
             renderTasks();
             renderUsers();
             renderApprovals();
             renderCodes();
+        }
+
+        function updateSessionInfo() {
+            const admin = adminState.currentAdmin;
+            const lastActivity = loadFromStorage('admin_last_activity');
+            
+            if (admin) {
+                document.getElementById('loginCount').textContent = admin.loginCount || 1;
+                document.getElementById('lastLogin').textContent = admin.lastLogin 
+                    ? new Date(admin.lastLogin).toLocaleString('ru', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) 
+                    : '—';
+                
+                if (lastActivity) {
+                    const activityDate = new Date(lastActivity);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now - activityDate) / (1000 * 60));
+                    
+                    let activityText;
+                    if (diffMinutes < 1) {
+                        activityText = 'Только что';
+                    } else if (diffMinutes < 60) {
+                        activityText = `${diffMinutes} мин. назад`;
+                    } else {
+                        activityText = activityDate.toLocaleString('ru', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                    
+                    document.getElementById('lastActivity').textContent = activityText;
+                } else {
+                    document.getElementById('lastActivity').textContent = '—';
+                }
+            }
         }
 
         // Data Management
@@ -1230,25 +1386,58 @@
             return [
                 {
                     id: 1,
-                    name: 'Анна Светлова',
+                    name: 'Рафик',
                     username: 'anna_s',
                     team: 'angels',
                     avatar: '👼',
-                    status: 'Старший менеджер',
+                    status: 'Главный ангелочек',
                     frameColor: '#d4af37',
                     completedTasks: [],
                     points: 450
                 },
                 {
                     id: 2,
-                    name: 'Дмитрий Тёмный',
+                    name: 'Биг БоSS',
                     username: 'dmitry_t',
                     team: 'demons',
                     avatar: '😈',
-                    status: 'Ведущий разработчик',
+                    status: 'Феш Меф',
                     frameColor: '#c41e3a',
                     completedTasks: [],
                     points: 520
+                },
+                {
+                    id: 3,
+                    name: 'Лялька',
+                    username: 'elena_y',
+                    team: 'angels',
+                    avatar: '⭐',
+                    status: 'Кудесник',
+                    frameColor: '#4a90e2',
+                    completedTasks: [],
+                    points: 280
+                },
+                {
+                    id: 4,
+                    name: 'Миша Грозный',
+                    username: 'mikhail_g',
+                    team: 'demons',
+                    avatar: '🔥',
+                    status: 'Огненный чел по бумажкам',
+                    frameColor: '#e74c3c',
+                    completedTasks: [],
+                    points: 310
+                },
+                {
+                    id: 5,
+                    name: 'Вероничка',
+                    username: 'olga_s',
+                    team: 'angels',
+                    avatar: '✨',
+                    status: 'Типо важная но на самом деле средняя особа',
+                    frameColor: '#9b59b6',
+                    completedTasks: [],
+                    points: 395
                 }
             ];
         }
