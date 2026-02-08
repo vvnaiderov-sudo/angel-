@@ -1367,6 +1367,16 @@
                     <div class="font-option" data-size="large">А</div>
                 </div>
             </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Сессия</div>
+                <div style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.875rem;">
+                    <div id="sessionInfo"></div>
+                </div>
+                <button class="btn btn-danger" onclick="logout()" style="width: 100%;">
+                    🚪 Выйти из аккаунта
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1448,6 +1458,7 @@
             initNavigation();
             loadFromStorage();
             generateMockData();
+            checkExistingSession();
         });
 
         // Auth
@@ -1471,6 +1482,59 @@
             });
         }
 
+        function checkExistingSession() {
+            const savedUser = loadFromStorage(STORAGE_KEYS.USER);
+            const sessionActive = loadFromStorage('session_active');
+            
+            if (savedUser && sessionActive) {
+                // Пользователь уже входил ранее
+                appState.currentUser = savedUser;
+                appState.selectedTeam = savedUser.team;
+                
+                // Автоматический вход
+                console.log('Автоматический вход для пользователя:', savedUser.name);
+                
+                document.getElementById('authScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                
+                loadUserProfile();
+                renderAllTasks();
+                renderFriends();
+                renderLeaderboard();
+                
+                // Показываем приветственное сообщение
+                setTimeout(() => {
+                    showWelcomeBackMessage(savedUser.name);
+                }, 500);
+            }
+        }
+
+        function showWelcomeBackMessage(name) {
+            // Можно показать toast-уведомление
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--accent);
+                color: var(--bg);
+                padding: 1rem 2rem;
+                border-radius: 8px;
+                font-weight: 600;
+                z-index: 1000;
+                animation: fadeIn 0.3s ease-out;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
+            toast.textContent = `С возвращением, ${name}! 👋`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         function authenticateUser() {
             // Simulate Telegram auth
             const telegramUser = tg.initDataUnsafe?.user || {
@@ -1488,10 +1552,14 @@
                 status: 'Новичок небесной канцелярии',
                 frameColor: appState.selectedTeam === 'angels' ? '#d4af37' : '#c41e3a',
                 completedTasks: [],
-                points: 0
+                points: 0,
+                lastLogin: new Date().toISOString(),
+                loginCount: (loadFromStorage(STORAGE_KEYS.USER)?.loginCount || 0) + 1
             };
 
             saveToStorage(STORAGE_KEYS.USER, appState.currentUser);
+            saveToStorage('session_active', true);
+            saveToStorage('last_activity', new Date().toISOString());
             
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
@@ -1500,6 +1568,47 @@
             renderAllTasks();
             renderFriends();
             renderLeaderboard();
+            
+            // Отслеживание активности
+            startActivityTracking();
+        }
+
+        // Отслеживание активности пользователя
+        function startActivityTracking() {
+            // Обновляем время последней активности при любом действии
+            const events = ['click', 'scroll', 'keypress', 'touchstart'];
+            
+            events.forEach(event => {
+                document.addEventListener(event, updateLastActivity, { passive: true });
+            });
+            
+            // Обновляем каждые 30 секунд если активен
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    updateLastActivity();
+                }
+            }, 30000);
+        }
+
+        function updateLastActivity() {
+            saveToStorage('last_activity', new Date().toISOString());
+        }
+
+        // Выход из системы
+        function logout() {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                saveToStorage('session_active', false);
+                
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('authScreen').style.display = 'flex';
+                
+                // Очищаем выбор команды
+                document.querySelectorAll('.team-card').forEach(c => c.classList.remove('selected'));
+                document.getElementById('authButton').disabled = true;
+                
+                appState.currentUser = null;
+                appState.selectedTeam = null;
+            }
         }
 
         // Profile
@@ -1994,6 +2103,7 @@
         // Settings
         function initSettings() {
             document.getElementById('settingsIcon').addEventListener('click', () => {
+                updateSessionInfo();
                 document.getElementById('settingsPanel').classList.add('active');
             });
 
@@ -2033,6 +2143,23 @@
                 document.body.className = `theme-${settings.theme} font-${settings.fontSize}`;
                 appState.theme = settings.theme;
                 appState.fontSize = settings.fontSize;
+            }
+        }
+
+        function updateSessionInfo() {
+            const user = appState.currentUser;
+            const lastActivity = loadFromStorage('last_activity');
+            const sessionInfo = document.getElementById('sessionInfo');
+            
+            if (user && sessionInfo) {
+                const lastLoginDate = user.lastLogin ? new Date(user.lastLogin).toLocaleString('ru') : 'Неизвестно';
+                const lastActivityDate = lastActivity ? new Date(lastActivity).toLocaleString('ru') : 'Неизвестно';
+                
+                sessionInfo.innerHTML = `
+                    <div><strong>Вход №:</strong> ${user.loginCount || 1}</div>
+                    <div><strong>Последний вход:</strong> ${lastLoginDate}</div>
+                    <div><strong>Последняя активность:</strong> ${lastActivityDate}</div>
+                `;
             }
         }
 
