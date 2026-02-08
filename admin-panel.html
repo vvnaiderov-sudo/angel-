@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель - Небесная Канцелярия</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --surface: #151515;
+            --text: #e8e4df;
+            --text-secondary: #9d9388;
+            --border: #2d2823;
+            --accent: #d4af37;
+            --accent-secondary: #c41e3a;
+            --success: #50c878;
+            --danger: #e74c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Auth */
+        .auth-screen {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .auth-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            text-align: center;
+            letter-spacing: 0.1em;
+        }
+
+        .auth-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .auth-form {
+            width: 100%;
+            max-width: 400px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.875rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            border-radius: 8px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        /* Header */
+        .admin-header {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+        }
+
+        .admin-info {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.875rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .info-value {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Tabs */
+        .admin-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .admin-tab {
+            padding: 1rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.875rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .admin-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Task Management */
+        .task-form {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        textarea.form-input {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .task-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .task-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            border-color: var(--accent);
+        }
+
+        .task-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .task-item-title {
+            font-weight: 600;
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-item-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.125rem;
+            transition: all 0.3s ease;
+        }
+
+        .icon-btn:hover {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        .icon-btn.danger:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+        /* Users Table */
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th {
+            text-align: left;
+            padding: 1rem;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .users-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .users-table tr:hover {
+            background: var(--bg);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            border: 2px solid var(--accent);
+            margin-right: 0.75rem;
+        }
+
+        .team-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .team-angels {
+            background: rgba(212, 175, 55, 0.2);
+            color: var(--accent);
+        }
+
+        .team-demons {
+            background: rgba(196, 30, 58, 0.2);
+            color: var(--accent-secondary);
+        }
+
+        /* Approval System */
+        .approval-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .approval-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+
+        .approval-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .approval-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .approval-task {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .approval-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .points-input {
+            width: 100px;
+            padding: 0.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: 'IBM Plex Mono', monospace;
+            text-align: center;
+        }
+
+        /* Messaging */
+        .message-form {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .recipient-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .recipient-option {
+            flex: 1;
+            padding: 1rem;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .recipient-option.active {
+            border-color: var(--accent);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        /* Access Codes */
+        .code-generator {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .generated-code {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 0.2em;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 2px solid var(--accent);
+        }
+
+        .code-list {
+            margin-top: 2rem;
+        }
+
+        .code-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .code-value {
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+        }
+
+        .code-status {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 1rem;
+            }
+
+            .admin-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .admin-info {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .task-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Screen -->
+    <div class="auth-screen" id="authScreen">
+        <div class="auth-logo">АДМИН-ПАНЕЛЬ</div>
+        <div class="auth-subtitle">Небесная Канцелярия</div>
+        
+        <div class="auth-form">
+            <div class="form-group">
+                <label class="form-label">Код администратора</label>
+                <input type="text" class="form-input" id="adminCode" placeholder="Введите код доступа">
+            </div>
+            <button class="btn" onclick="authenticate()">Войти</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-container" id="adminPanel" style="display: none;">
+        <div class="admin-header">
+            <h1 class="admin-title">АДМИН-ПАНЕЛЬ</h1>
+            <div class="admin-info">
+                <div class="info-item">
+                    <span class="info-label">Администратор</span>
+                    <span class="info-value" id="adminName">—</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Всего пользователей</span>
+                    <span class="info-value" id="totalUsers">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Активных заданий</span>
+                    <span class="info-value" id="activeTasks">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value" id="angelsCount">0</span>
+                <span class="stat-label">👼 Ангелов</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="demonsCount">0</span>
+                <span class="stat-label">😈 Демонов</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="pendingApprovals">0</span>
+                <span class="stat-label">Ожидают проверки</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="totalPoints">0</span>
+                <span class="stat-label">Всего баллов выдано</span>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="admin-tabs">
+            <button class="admin-tab active" onclick="switchTab('tasks')">Задания</button>
+            <button class="admin-tab" onclick="switchTab('approvals')">Проверка заданий</button>
+            <button class="admin-tab" onclick="switchTab('users')">Пользователи</button>
+            <button class="admin-tab" onclick="switchTab('messages')">Рассылка</button>
+            <button class="admin-tab" onclick="switchTab('codes')">Коды доступа</button>
+        </div>
+
+        <!-- Tasks Tab -->
+        <div class="tab-content active" id="tasksTab">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Создать новое задание</h2>
+                </div>
+                <form class="task-form" onsubmit="createTask(event)">
+                    <div class="form-group">
+                        <label class="form-label">Название задания</label>
+                        <input type="text" class="form-input" id="taskTitle" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Категория</label>
+                            <input type="text" class="form-input" id="taskCategory" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Баллы</label>
+                            <input type="number" class="form-input" id="taskPoints" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Дедлайн</label>
+                            <input type="date" class="form-input" id="taskDeadline" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-input" id="taskDescription" required></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Место выполнения (опционально)</label>
+                            <input type="text" class="form-input" id="taskLocation">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Код доступа (опционально)</label>
+                            <input type="text" class="form-input" id="taskAccessCode">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn">Создать задание</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Все задания</h2>
+                </div>
+                <div class="task-list" id="tasksList"></div>
+            </div>
+        </div>
+
+        <!-- Approvals Tab -->
+        <div class="tab-content" id="approvalsTab">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Задания на проверке</h2>
+                </div>
+                <div class="approval-list" id="approvalsList"></div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div class="tab-content" id="usersTab">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Все пользователи</h2>
+                </div>
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Пользователь</th>
+                            <th>Команда</th>
+                            <th>Выполнено</th>
+                            <th>Баллы</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Messages Tab -->
+        <div class="tab-content" id="messagesTab">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Отправить сообщение</h2>
+                </div>
+                <form class="message-form" onsubmit="sendMessage(event)">
+                    <div class="recipient-selector">
+                        <div class="recipient-option active" data-recipient="all">
+                            <div>📢</div>
+                            <div>Всем</div>
+                        </div>
+                        <div class="recipient-option" data-recipient="angels">
+                            <div>👼</div>
+                            <div>Ангелам</div>
+                        </div>
+                        <div class="recipient-option" data-recipient="demons">
+                            <div>😈</div>
+                            <div>Демонам</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Заголовок</label>
+                        <input type="text" class="form-input" id="messageTitle" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Текст сообщения</label>
+                        <textarea class="form-input" id="messageText" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn">Отправить</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Codes Tab -->
+        <div class="tab-content" id="codesTab">
+            <div class="card">
+                <div class="code-generator">
+                    <h2 class="card-title">Генератор кодов администратора</h2>
+                    <p style="color: var(--text-secondary); margin: 1rem 0;">
+                        Сгенерируйте новый код для предоставления доступа к админ-панели
+                    </p>
+                    <button class="btn" onclick="generateAdminCode()">Сгенерировать код</button>
+                    <div class="generated-code" id="generatedCode" style="display: none;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Активные коды</h2>
+                </div>
+                <div class="code-list" id="codesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Telegram WebApp
+        let tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.expand();
+        }
+
+        // Admin State
+        const adminState = {
+            currentAdmin: null,
+            selectedRecipient: 'all',
+            users: [],
+            tasks: [],
+            pendingApprovals: [],
+            adminCodes: []
+        };
+
+        // Storage
+        const ADMIN_STORAGE = {
+            ADMINS: 'admin_celestial_admins',
+            CODES: 'admin_celestial_codes',
+            TASKS: 'celestial_tasks',
+            USERS: 'admin_celestial_users',
+            APPROVALS: 'admin_celestial_approvals'
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initRecipientSelector();
+            loadMockData();
+            checkAuth();
+        });
+
+        function checkAuth() {
+            const savedAdmin = loadFromStorage('current_admin');
+            if (savedAdmin) {
+                adminState.currentAdmin = savedAdmin;
+                showAdminPanel();
+            }
+        }
+
+        function authenticate() {
+            const code = document.getElementById('adminCode').value.trim();
+            const codes = loadFromStorage(ADMIN_STORAGE.CODES) || [];
+            
+            const validCode = codes.find(c => c.code === code && c.active);
+            
+            if (validCode || code === 'ADMIN2025') {
+                const telegramUser = tg?.initDataUnsafe?.user || {
+                    id: Date.now(),
+                    first_name: 'Администратор',
+                    username: 'admin'
+                };
+
+                adminState.currentAdmin = {
+                    id: telegramUser.id,
+                    name: telegramUser.first_name,
+                    username: telegramUser.username,
+                    accessLevel: 'admin'
+                };
+
+                saveToStorage('current_admin', adminState.currentAdmin);
+                showAdminPanel();
+            } else {
+                alert('Неверный код доступа');
+            }
+        }
+
+        function showAdminPanel() {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('adminName').textContent = adminState.currentAdmin.name;
+            
+            loadData();
+            updateStats();
+            renderTasks();
+            renderUsers();
+            renderApprovals();
+            renderCodes();
+        }
+
+        // Data Management
+        function loadData() {
+            adminState.users = loadFromStorage(ADMIN_STORAGE.USERS) || generateMockUsers();
+            adminState.tasks = loadFromStorage(ADMIN_STORAGE.TASKS) || generateMockTasks();
+            adminState.pendingApprovals = loadFromStorage(ADMIN_STORAGE.APPROVALS) || generateMockApprovals();
+            adminState.adminCodes = loadFromStorage(ADMIN_STORAGE.CODES) || [];
+        }
+
+        function updateStats() {
+            const angels = adminState.users.filter(u => u.team === 'angels').length;
+            const demons = adminState.users.filter(u => u.team === 'demons').length;
+            const totalPoints = adminState.users.reduce((sum, u) => sum + u.points, 0);
+            
+            document.getElementById('totalUsers').textContent = adminState.users.length;
+            document.getElementById('activeTasks').textContent = adminState.tasks.length;
+            document.getElementById('angelsCount').textContent = angels;
+            document.getElementById('demonsCount').textContent = demons;
+            document.getElementById('pendingApprovals').textContent = adminState.pendingApprovals.length;
+            document.getElementById('totalPoints').textContent = totalPoints;
+        }
+
+        // Tasks
+        function createTask(event) {
+            event.preventDefault();
+            
+            const task = {
+                id: Date.now(),
+                title: document.getElementById('taskTitle').value,
+                category: document.getElementById('taskCategory').value,
+                points: parseInt(document.getElementById('taskPoints').value),
+                deadline: document.getElementById('taskDeadline').value,
+                description: document.getElementById('taskDescription').value,
+                location: document.getElementById('taskLocation').value,
+                accessCode: document.getElementById('taskAccessCode').value,
+                createdAt: new Date().toISOString(),
+                createdBy: adminState.currentAdmin.name
+            };
+
+            adminState.tasks.unshift(task);
+            saveToStorage(ADMIN_STORAGE.TASKS, adminState.tasks);
+            
+            event.target.reset();
+            renderTasks();
+            updateStats();
+            
+            alert('Задание успешно создано!');
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasksList');
+            
+            if (adminState.tasks.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><p>Пока нет заданий</p></div>';
+                return;
+            }
+
+            container.innerHTML = adminState.tasks.map(task => `
+                <div class="task-item">
+                    <div class="task-item-header">
+                        <div>
+                            <div class="task-item-title">${task.title}</div>
+                            <div class="task-item-meta">
+                                ${task.category} • ${task.points} баллов • До ${formatDate(task.deadline)}
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="icon-btn" onclick="editTask(${task.id})" title="Редактировать">✏️</button>
+                            <button class="icon-btn danger" onclick="deleteTask(${task.id})" title="Удалить">🗑️</button>
+                        </div>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem;">${task.description}</p>
+                    ${task.location ? `<p style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.5rem;">📍 ${task.location}</p>` : ''}
+                    ${task.accessCode ? `<p style="color: var(--text-secondary); font-size: 0.75rem;">🔑 ${task.accessCode}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function deleteTask(taskId) {
+            if (confirm('Вы уверены, что хотите удалить это задание?')) {
+                adminState.tasks = adminState.tasks.filter(t => t.id !== taskId);
+                saveToStorage(ADMIN_STORAGE.TASKS, adminState.tasks);
+                renderTasks();
+                updateStats();
+            }
+        }
+
+        function editTask(taskId) {
+            const task = adminState.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('taskTitle').value = task.title;
+            document.getElementById('taskCategory').value = task.category;
+            document.getElementById('taskPoints').value = task.points;
+            document.getElementById('taskDeadline').value = task.deadline;
+            document.getElementById('taskDescription').value = task.description;
+            document.getElementById('taskLocation').value = task.location || '';
+            document.getElementById('taskAccessCode').value = task.accessCode || '';
+
+            deleteTask(taskId);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Approvals
+        function renderApprovals() {
+            const container = document.getElementById('approvalsList');
+            
+            if (adminState.pendingApprovals.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">✅</div><p>Нет заданий на проверке</p></div>';
+                return;
+            }
+
+            container.innerHTML = adminState.pendingApprovals.map(approval => {
+                const user = adminState.users.find(u => u.id === approval.userId);
+                const task = adminState.tasks.find(t => t.id === approval.taskId);
+                
+                return `
+                    <div class="approval-item">
+                        <div class="approval-header">
+                            <div class="approval-user">
+                                <div class="user-avatar" style="border-color: ${user?.frameColor || '#d4af37'};">
+                                    ${user?.avatar || '👤'}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600;">${user?.name || 'Неизвестный'}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                                        ${new Date(approval.submittedAt).toLocaleString('ru')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="approval-task">
+                            <strong>Задание:</strong> ${task?.title || 'Удалённое задание'}
+                        </div>
+                        <div class="approval-task">
+                            <strong>Комментарий:</strong> ${approval.comment || 'Без комментария'}
+                        </div>
+                        
+                        <div class="approval-actions">
+                            <input type="number" class="points-input" 
+                                   value="${task?.points || 50}" 
+                                   min="0" 
+                                   id="points_${approval.id}"
+                                   placeholder="Баллы">
+                            <button class="btn btn-success" onclick="approveTask(${approval.id})">✓ Одобрить</button>
+                            <button class="btn btn-danger" onclick="rejectTask(${approval.id})">✗ Отклонить</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function approveTask(approvalId) {
+            const approval = adminState.pendingApprovals.find(a => a.id === approvalId);
+            if (!approval) return;
+
+            const points = parseInt(document.getElementById(`points_${approvalId}`).value) || 0;
+            const user = adminState.users.find(u => u.id === approval.userId);
+            const task = adminState.tasks.find(t => t.id === approval.taskId);
+
+            if (user && task) {
+                user.points += points;
+                user.completedTasks.push({
+                    ...task,
+                    completedAt: new Date().toISOString(),
+                    earnedPoints: points,
+                    hideDescription: false
+                });
+
+                adminState.pendingApprovals = adminState.pendingApprovals.filter(a => a.id !== approvalId);
+                
+                saveToStorage(ADMIN_STORAGE.USERS, adminState.users);
+                saveToStorage(ADMIN_STORAGE.APPROVALS, adminState.pendingApprovals);
+                
+                renderApprovals();
+                renderUsers();
+                updateStats();
+                
+                alert(`Задание одобрено! ${user.name} получил ${points} баллов.`);
+            }
+        }
+
+        function rejectTask(approvalId) {
+            if (confirm('Вы уверены, что хотите отклонить это задание?')) {
+                adminState.pendingApprovals = adminState.pendingApprovals.filter(a => a.id !== approvalId);
+                saveToStorage(ADMIN_STORAGE.APPROVALS, adminState.pendingApprovals);
+                renderApprovals();
+                updateStats();
+            }
+        }
+
+        // Users
+        function renderUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            
+            tbody.innerHTML = adminState.users.map(user => `
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center;">
+                            <div class="user-avatar" style="border-color: ${user.frameColor};">
+                                ${user.avatar}
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">${user.name}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">@${user.username}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="team-badge team-${user.team}">
+                            ${user.team === 'angels' ? '👼 Ангел' : '😈 Демон'}
+                        </span>
+                    </td>
+                    <td>${user.completedTasks.length}</td>
+                    <td style="color: var(--accent); font-weight: 600;">${user.points}</td>
+                    <td style="color: var(--text-secondary); font-size: 0.875rem;">${user.status}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Messages
+        function initRecipientSelector() {
+            document.querySelectorAll('.recipient-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.recipient-option').forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    adminState.selectedRecipient = this.dataset.recipient;
+                });
+            });
+        }
+
+        function sendMessage(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('messageTitle').value;
+            const text = document.getElementById('messageText').value;
+            const recipient = adminState.selectedRecipient;
+
+            let recipientCount = 0;
+            if (recipient === 'all') {
+                recipientCount = adminState.users.length;
+            } else {
+                recipientCount = adminState.users.filter(u => u.team === recipient).length;
+            }
+
+            if (confirm(`Отправить сообщение для ${recipientCount} получателей?`)) {
+                // In real app, this would send via Telegram Bot API
+                event.target.reset();
+                alert('Сообщение отправлено!');
+            }
+        }
+
+        // Admin Codes
+        function generateAdminCode() {
+            const code = 'ADMIN' + Math.random().toString(36).substring(2, 10).toUpperCase();
+            
+            const newCode = {
+                id: Date.now(),
+                code: code,
+                createdAt: new Date().toISOString(),
+                createdBy: adminState.currentAdmin.name,
+                active: true,
+                usedBy: null
+            };
+
+            adminState.adminCodes.unshift(newCode);
+            saveToStorage(ADMIN_STORAGE.CODES, adminState.adminCodes);
+            
+            document.getElementById('generatedCode').textContent = code;
+            document.getElementById('generatedCode').style.display = 'block';
+            
+            renderCodes();
+        }
+
+        function renderCodes() {
+            const container = document.getElementById('codesList');
+            
+            if (adminState.adminCodes.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔑</div><p>Нет активных кодов</p></div>';
+                return;
+            }
+
+            container.innerHTML = adminState.adminCodes.map(code => `
+                <div class="code-item">
+                    <div>
+                        <div class="code-value">${code.code}</div>
+                        <div class="code-status">
+                            Создан ${formatDate(code.createdAt)} • ${code.active ? '✅ Активен' : '❌ Неактивен'}
+                            ${code.usedBy ? ` • Использован: ${code.usedBy}` : ''}
+                        </div>
+                    </div>
+                    <button class="icon-btn ${code.active ? 'danger' : ''}" 
+                            onclick="toggleCode(${code.id})">
+                        ${code.active ? '🔒' : '🔓'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function toggleCode(codeId) {
+            const code = adminState.adminCodes.find(c => c.id === codeId);
+            if (code) {
+                code.active = !code.active;
+                saveToStorage(ADMIN_STORAGE.CODES, adminState.adminCodes);
+                renderCodes();
+            }
+        }
+
+        // Tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        // Utilities
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ru');
+        }
+
+        function saveToStorage(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error('Storage error:', e);
+            }
+        }
+
+        function loadFromStorage(key) {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : null;
+            } catch (e) {
+                console.error('Storage error:', e);
+                return null;
+            }
+        }
+
+        // Mock Data
+        function loadMockData() {
+            if (!loadFromStorage(ADMIN_STORAGE.USERS)) {
+                saveToStorage(ADMIN_STORAGE.USERS, generateMockUsers());
+            }
+            if (!loadFromStorage(ADMIN_STORAGE.TASKS)) {
+                saveToStorage(ADMIN_STORAGE.TASKS, generateMockTasks());
+            }
+            if (!loadFromStorage(ADMIN_STORAGE.APPROVALS)) {
+                saveToStorage(ADMIN_STORAGE.APPROVALS, generateMockApprovals());
+            }
+        }
+
+        function generateMockUsers() {
+            return [
+                {
+                    id: 1,
+                    name: 'Анна Светлова',
+                    username: 'anna_s',
+                    team: 'angels',
+                    avatar: '👼',
+                    status: 'Старший менеджер',
+                    frameColor: '#d4af37',
+                    completedTasks: [],
+                    points: 450
+                },
+                {
+                    id: 2,
+                    name: 'Дмитрий Тёмный',
+                    username: 'dmitry_t',
+                    team: 'demons',
+                    avatar: '😈',
+                    status: 'Ведущий разработчик',
+                    frameColor: '#c41e3a',
+                    completedTasks: [],
+                    points: 520
+                }
+            ];
+        }
+
+        function generateMockTasks() {
+            return [
+                {
+                    id: 1,
+                    title: 'Организовать встречу команды',
+                    description: 'Подготовить повестку и пригласить всех участников',
+                    category: 'Менеджмент',
+                    points: 50,
+                    deadline: '2026-02-15',
+                    location: 'Офис 02',
+                    accessCode: '47748',
+                    createdAt: new Date().toISOString(),
+                    createdBy: 'Система'
+                }
+            ];
+        }
+
+        function generateMockApprovals() {
+            return [
+                {
+                    id: 1,
+                    userId: 1,
+                    taskId: 1,
+                    comment: 'Встреча успешно проведена',
+                    submittedAt: new Date().toISOString()
+                }
+            ];
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,2218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Небесная Канцелярия</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Light Theme - Angels */
+            --bg-light: #faf9f6;
+            --surface-light: #ffffff;
+            --text-light: #1a1614;
+            --text-secondary-light: #6b6460;
+            --border-light: #e8e4df;
+            --accent-light: #d4af37;
+            --angel-primary: #e8dcc8;
+            --angel-accent: #f4e9d8;
+            --angel-glow: rgba(244, 233, 216, 0.3);
+
+            /* Dark Theme - Demons */
+            --bg-dark: #0d0b0a;
+            --surface-dark: #1a1614;
+            --text-dark: #e8e4df;
+            --text-secondary-dark: #9d9388;
+            --border-dark: #2d2823;
+            --accent-dark: #c41e3a;
+            --demon-primary: #2d1b1f;
+            --demon-accent: #4a1f28;
+            --demon-glow: rgba(196, 30, 58, 0.3);
+
+            /* Gray Theme - Neutral */
+            --bg-gray: #18181b;
+            --surface-gray: #27272a;
+            --text-gray: #fafafa;
+            --text-secondary-gray: #a1a1aa;
+            --border-gray: #3f3f46;
+            --accent-gray: #71717a;
+
+            --font-size-multiplier: 1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Theme Classes */
+        body.theme-light {
+            --bg: var(--bg-light);
+            --surface: var(--surface-light);
+            --text: var(--text-light);
+            --text-secondary: var(--text-secondary-light);
+            --border: var(--border-light);
+            --accent: var(--accent-light);
+            --primary: var(--angel-primary);
+            --primary-accent: var(--angel-accent);
+            --glow: var(--angel-glow);
+        }
+
+        body.theme-dark {
+            --bg: var(--bg-dark);
+            --surface: var(--surface-dark);
+            --text: var(--text-dark);
+            --text-secondary: var(--text-secondary-dark);
+            --border: var(--border-dark);
+            --accent: var(--accent-dark);
+            --primary: var(--demon-primary);
+            --primary-accent: var(--demon-accent);
+            --glow: var(--demon-glow);
+        }
+
+        body.theme-gray {
+            --bg: var(--bg-gray);
+            --surface: var(--surface-gray);
+            --text: var(--text-gray);
+            --text-secondary: var(--text-secondary-gray);
+            --border: var(--border-gray);
+            --accent: var(--accent-gray);
+            --primary: var(--surface-gray);
+            --primary-accent: var(--border-gray);
+            --glow: rgba(113, 113, 122, 0.2);
+        }
+
+        /* Font Size Classes */
+        body.font-small { --font-size-multiplier: 0.875; }
+        body.font-normal { --font-size-multiplier: 1; }
+        body.font-large { --font-size-multiplier: 1.125; }
+
+        .app-container {
+            max-width: 100vw;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        /* Animated Background */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.03;
+            z-index: 0;
+            background-image: 
+                repeating-linear-gradient(45deg, transparent, transparent 35px, var(--accent) 35px, var(--accent) 36px),
+                repeating-linear-gradient(-45deg, transparent, transparent 35px, var(--accent) 35px, var(--accent) 36px);
+        }
+
+        /* Auth Screen */
+        .auth-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 2rem;
+        }
+
+        .auth-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: calc(3rem * var(--font-size-multiplier));
+            font-weight: 300;
+            margin-bottom: 1rem;
+            text-align: center;
+            letter-spacing: 0.1em;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .auth-subtitle {
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            animation: fadeIn 1s ease-out 0.3s both;
+        }
+
+        .team-selector {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            animation: fadeIn 1s ease-out 0.6s both;
+        }
+
+        .team-card {
+            width: 140px;
+            height: 180px;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .team-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--glow);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .team-card:hover::before,
+        .team-card.selected::before {
+            opacity: 1;
+        }
+
+        .team-card.selected {
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .team-icon {
+            font-size: 3rem;
+            z-index: 1;
+        }
+
+        .team-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: calc(1.25rem * var(--font-size-multiplier));
+            font-weight: 600;
+            z-index: 1;
+        }
+
+        .auth-button {
+            padding: 1rem 3rem;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            border-radius: 8px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: fadeIn 1s ease-out 0.9s both;
+        }
+
+        .auth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--glow);
+        }
+
+        .auth-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Header */
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: calc(1.5rem * var(--font-size-multiplier));
+            font-weight: 300;
+            text-align: center;
+            letter-spacing: 0.1em;
+        }
+
+        /* Main Content */
+        .main-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Profile Tab */
+        .profile-container {
+            padding: 2rem 1rem;
+        }
+
+        .profile-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .settings-icon {
+            position: absolute;
+            top: 0;
+            right: 1rem;
+            font-size: calc(1.5rem * var(--font-size-multiplier));
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .settings-icon:hover {
+            color: var(--accent);
+            transform: rotate(90deg);
+        }
+
+        .avatar-wrapper {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .avatar-frame {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid var(--accent);
+            padding: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .avatar-frame:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 24px var(--glow);
+        }
+
+        .avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .color-picker-btn {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .profile-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: calc(2rem * var(--font-size-multiplier));
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .profile-name:hover {
+            color: var(--accent);
+        }
+
+        .profile-status {
+            color: var(--text-secondary);
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            padding: 1.5rem;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: calc(2rem * var(--font-size-multiplier));
+            font-weight: 600;
+            color: var(--accent);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: calc(0.75rem * var(--font-size-multiplier));
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .completed-tasks {
+            margin-top: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: calc(1.25rem * var(--font-size-multiplier));
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding: 0 1rem;
+        }
+
+        .task-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px var(--glow);
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-title {
+            font-weight: 500;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+        }
+
+        .task-points {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+        }
+
+        .task-description {
+            font-size: calc(0.75rem * var(--font-size-multiplier));
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .task-description.hidden {
+            display: none;
+        }
+
+        .toggle-description {
+            font-size: calc(0.7rem * var(--font-size-multiplier));
+            color: var(--accent);
+            cursor: pointer;
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+
+        /* Tasks Feed */
+        .tasks-feed {
+            padding: 1rem;
+        }
+
+        .tasks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .slots-info {
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+            color: var(--text-secondary);
+        }
+
+        .slots-count {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .feed-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feed-tab {
+            flex: 1;
+            padding: 0.75rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+            transition: all 0.3s ease;
+        }
+
+        .feed-tab.active {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        .task-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .task-card.enrolled {
+            border-color: var(--accent);
+            background: var(--primary);
+            box-shadow: 0 4px 16px var(--glow);
+        }
+
+        .task-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .task-info h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: calc(1.125rem * var(--font-size-multiplier));
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-meta {
+            font-size: calc(0.75rem * var(--font-size-multiplier));
+            color: var(--text-secondary);
+        }
+
+        .task-action {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: transparent;
+            color: var(--accent);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .task-action:hover {
+            background: var(--accent);
+            color: var(--bg);
+            transform: scale(1.1);
+        }
+
+        .task-card-content {
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* My Tasks Detail Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: 16px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: calc(1.5rem * var(--font-size-multiplier));
+            font-weight: 600;
+        }
+
+        .modal-close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--accent);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .detail-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-label {
+            font-size: calc(0.75rem * var(--font-size-multiplier));
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-value {
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+            line-height: 1.6;
+        }
+
+        .chat-section {
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+        }
+
+        .chat-messages {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .chat-message {
+            padding: 0.75rem;
+            background: var(--primary);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .message-author {
+            font-weight: 600;
+            font-size: calc(0.75rem * var(--font-size-multiplier));
+            color: var(--accent);
+            margin-bottom: 0.25rem;
+        }
+
+        .message-text {
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+        }
+
+        .chat-input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 0.75rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+        }
+
+        .send-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        /* Friends Gallery */
+        .friends-grid {
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .friend-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .friend-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px var(--glow);
+        }
+
+        .friend-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 0.75rem;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            border: 3px solid var(--accent);
+        }
+
+        .friend-name {
+            font-weight: 600;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+            margin-bottom: 0.25rem;
+        }
+
+        .friend-role {
+            font-size: calc(0.75rem * var(--font-size-multiplier));
+            color: var(--text-secondary);
+        }
+
+        /* Wall Canvas */
+        .wall-section {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .canvas-container {
+            position: relative;
+            margin-top: 1rem;
+        }
+
+        .drawing-canvas {
+            width: 100%;
+            height: 300px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: crosshair;
+            background: var(--bg);
+        }
+
+        .canvas-tools {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .color-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .color-btn:hover,
+        .color-btn.active {
+            transform: scale(1.2);
+            border-color: var(--accent);
+        }
+
+        .tool-btn {
+            padding: 0.5rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: calc(0.75rem * var(--font-size-multiplier));
+            transition: all 0.3s ease;
+        }
+
+        .tool-btn:hover,
+        .tool-btn.active {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .wall-posts {
+            margin-top: 1rem;
+        }
+
+        .wall-post {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .post-author {
+            font-weight: 600;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+            margin-bottom: 0.5rem;
+        }
+
+        .post-image {
+            width: 100%;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+        }
+
+        /* Leaderboard */
+        .leaderboard-container {
+            padding: 1rem;
+        }
+
+        .team-battle {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .battle-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: calc(1.25rem * var(--font-size-multiplier));
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .battle-bar {
+            height: 40px;
+            display: flex;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .angels-bar {
+            background: linear-gradient(90deg, #f4e9d8, #d4af37);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: width 0.6s ease;
+        }
+
+        .demons-bar {
+            background: linear-gradient(90deg, #c41e3a, #4a1f28);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: width 0.6s ease;
+        }
+
+        .battle-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+        }
+
+        .leaderboard-list {
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.3s ease;
+        }
+
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+
+        .leaderboard-item:hover {
+            background: var(--primary);
+        }
+
+        .rank {
+            width: 40px;
+            font-size: calc(1.25rem * var(--font-size-multiplier));
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .user-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            border: 2px solid var(--accent);
+        }
+
+        .user-name {
+            font-weight: 500;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+        }
+
+        .score {
+            font-size: calc(1rem * var(--font-size-multiplier));
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 0.75rem 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            padding: 0.5rem;
+        }
+
+        .nav-item.active {
+            color: var(--accent);
+        }
+
+        .nav-icon {
+            font-size: calc(1.5rem * var(--font-size-multiplier));
+        }
+
+        .nav-label {
+            font-size: calc(0.625rem * var(--font-size-multiplier));
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 80%;
+            max-width: 400px;
+            height: 100vh;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            z-index: 600;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+
+        .settings-panel.active {
+            right: 0;
+        }
+
+        .settings-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-content {
+            padding: 1.5rem;
+        }
+
+        .setting-group {
+            margin-bottom: 2rem;
+        }
+
+        .setting-group-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: calc(1.125rem * var(--font-size-multiplier));
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .theme-options,
+        .font-options {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .theme-option,
+        .font-option {
+            flex: 1;
+            padding: 1rem;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+        }
+
+        .theme-option.active,
+        .font-option.active {
+            border-color: var(--accent);
+            background: var(--primary);
+        }
+
+        /* Color Picker Modal */
+        .color-picker-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 700;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .color-picker-modal.active {
+            display: flex;
+        }
+
+        .color-picker-content {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 300px;
+            width: 90%;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .color-option {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            border: 3px solid transparent;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: var(--text);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Tabs */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Input Styles */
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: calc(0.875rem * var(--font-size-multiplier));
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Image Upload */
+        .avatar-upload {
+            display: none;
+        }
+
+        .template-avatars {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .template-avatar {
+            aspect-ratio: 1;
+            background: var(--primary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .template-avatar:hover {
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .friends-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+    </style>
+</head>
+<body class="theme-dark font-normal">
+    <div class="bg-pattern"></div>
+
+    <!-- Auth Screen -->
+    <div class="auth-screen" id="authScreen">
+        <div class="auth-logo">НЕБЕСНАЯ КАНЦЕЛЯРИЯ</div>
+        <div class="auth-subtitle">Celestial Office</div>
+        
+        <div class="team-selector">
+            <div class="team-card" data-team="angels">
+                <div class="team-icon">👼</div>
+                <div class="team-name">Ангелы</div>
+            </div>
+            <div class="team-card" data-team="demons">
+                <div class="team-icon">😈</div>
+                <div class="team-name">Демоны</div>
+            </div>
+        </div>
+
+        <button class="auth-button" id="authButton" disabled>Войти через Telegram</button>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="mainApp" style="display: none;">
+        <div class="header">
+            <h1 class="header-title">НЕБЕСНАЯ КАНЦЕЛЯРИЯ</h1>
+        </div>
+
+        <div class="main-content">
+            <!-- Profile Tab -->
+            <div class="tab-content active" id="profileTab">
+                <div class="profile-container">
+                    <div class="profile-header">
+                        <div class="settings-icon" id="settingsIcon">⚙️</div>
+                        
+                        <div class="avatar-wrapper">
+                            <div class="avatar-frame" id="avatarFrame">
+                                <div class="avatar" id="avatar">👤</div>
+                            </div>
+                            <div class="color-picker-btn" id="colorPickerBtn">🎨</div>
+                        </div>
+                        
+                        <div class="profile-name" id="profileName">Ваше имя</div>
+                        <div class="profile-status" id="profileStatus">Статус не установлен</div>
+                    </div>
+
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="completedCount">0</span>
+                            <span class="stat-label">Выполнено</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="totalPoints">0</span>
+                            <span class="stat-label">Баллы</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="rank">—</span>
+                            <span class="stat-label">Место</span>
+                        </div>
+                    </div>
+
+                    <div class="completed-tasks">
+                        <h2 class="section-title">Выполненные задания</h2>
+                        <div id="completedTasksList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Feed Tab -->
+            <div class="tab-content" id="tasksTab">
+                <div class="tasks-feed">
+                    <div class="tasks-header">
+                        <div class="slots-info">
+                            Записано: <span class="slots-count" id="enrolledCount">0</span>/3
+                        </div>
+                    </div>
+
+                    <div class="feed-tabs">
+                        <div class="feed-tab active" data-feed="all">Все задания</div>
+                        <div class="feed-tab" data-feed="my">Мои задания</div>
+                    </div>
+
+                    <div id="allTasksFeed"></div>
+                    <div id="myTasksFeed" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Friends Gallery Tab -->
+            <div class="tab-content" id="friendsTab">
+                <div class="friends-grid" id="friendsGrid"></div>
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div class="tab-content" id="leaderboardTab">
+                <div class="leaderboard-container">
+                    <div class="team-battle">
+                        <h2 class="battle-title">Битва команд</h2>
+                        <div class="battle-bar">
+                            <div class="angels-bar" id="angelsBar" style="width: 50%;">
+                                <span id="angelsScore">0</span>
+                            </div>
+                            <div class="demons-bar" id="demonsBar" style="width: 50%;">
+                                <span id="demonsScore">0</span>
+                            </div>
+                        </div>
+                        <div class="battle-stats">
+                            <div>👼 Ангелы</div>
+                            <div>😈 Демоны</div>
+                        </div>
+                    </div>
+
+                    <h2 class="section-title">Рейтинг участников</h2>
+                    <div class="leaderboard-list" id="leaderboardList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active" data-tab="profile">
+                <div class="nav-icon">👤</div>
+                <div class="nav-label">Профиль</div>
+            </div>
+            <div class="nav-item" data-tab="tasks">
+                <div class="nav-icon">📋</div>
+                <div class="nav-label">Задания</div>
+            </div>
+            <div class="nav-item" data-tab="friends">
+                <div class="nav-icon">👥</div>
+                <div class="nav-label">Друзья</div>
+            </div>
+            <div class="nav-item" data-tab="leaderboard">
+                <div class="nav-icon">🏆</div>
+                <div class="nav-label">Рейтинг</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h2 class="modal-title">Настройки</h2>
+            <div class="modal-close" id="closeSettings">✕</div>
+        </div>
+        <div class="settings-content">
+            <div class="setting-group">
+                <div class="setting-group-title">Тема оформления</div>
+                <div class="theme-options">
+                    <div class="theme-option" data-theme="light">☀️ Светлая</div>
+                    <div class="theme-option active" data-theme="dark">🌙 Темная</div>
+                    <div class="theme-option" data-theme="gray">⚫ Серая</div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Размер шрифта</div>
+                <div class="font-options">
+                    <div class="font-option" data-size="small">А</div>
+                    <div class="font-option active" data-size="normal">А</div>
+                    <div class="font-option" data-size="large">А</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Color Picker Modal -->
+    <div class="color-picker-modal" id="colorPickerModal">
+        <div class="color-picker-content">
+            <h3 class="modal-title">Выберите цвет рамки</h3>
+            <div class="color-grid" id="colorGrid"></div>
+        </div>
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div class="modal-overlay" id="taskDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTaskTitle">Задание</h2>
+                <div class="modal-close" id="closeTaskModal">✕</div>
+            </div>
+            <div class="modal-body" id="modalTaskBody"></div>
+        </div>
+    </div>
+
+    <!-- Friend Profile Modal -->
+    <div class="modal-overlay" id="friendProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Профиль</h2>
+                <div class="modal-close" id="closeFriendModal">✕</div>
+            </div>
+            <div class="modal-body" id="friendProfileBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Telegram WebApp
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        // App State
+        const appState = {
+            currentUser: null,
+            selectedTeam: null,
+            theme: 'dark',
+            fontSize: 'normal',
+            frameColor: '#d4af37',
+            enrolledTasks: [],
+            completedTasks: [],
+            allTasks: [],
+            friends: [],
+            leaderboard: []
+        };
+
+        // Storage keys
+        const STORAGE_KEYS = {
+            USER: 'celestial_user',
+            TASKS: 'celestial_tasks',
+            COMPLETED: 'celestial_completed',
+            ENROLLED: 'celestial_enrolled',
+            FRIENDS: 'celestial_friends',
+            WALL_POSTS: 'celestial_wall_posts'
+        };
+
+        // Color palette for frame
+        const frameColors = [
+            '#d4af37', '#c41e3a', '#4a90e2', '#50c878',
+            '#9b59b6', '#e74c3c', '#f39c12', '#1abc9c',
+            '#34495e', '#e67e22', '#2ecc71', '#3498db'
+        ];
+
+        // Template avatars
+        const templateAvatars = ['👤', '👼', '😈', '🌟', '⭐', '💫', '✨', '🔥', '❄️', '🌙', '☀️', '⚡'];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initAuth();
+            initColorPicker();
+            initSettings();
+            initNavigation();
+            loadFromStorage();
+            generateMockData();
+        });
+
+        // Auth
+        function initAuth() {
+            const teamCards = document.querySelectorAll('.team-card');
+            const authButton = document.getElementById('authButton');
+
+            teamCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    teamCards.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    appState.selectedTeam = this.dataset.team;
+                    authButton.disabled = false;
+                });
+            });
+
+            authButton.addEventListener('click', function() {
+                if (appState.selectedTeam) {
+                    authenticateUser();
+                }
+            });
+        }
+
+        function authenticateUser() {
+            // Simulate Telegram auth
+            const telegramUser = tg.initDataUnsafe?.user || {
+                id: Date.now(),
+                first_name: 'Пользователь',
+                username: 'user' + Math.floor(Math.random() * 1000)
+            };
+
+            appState.currentUser = {
+                id: telegramUser.id,
+                name: telegramUser.first_name,
+                username: telegramUser.username,
+                team: appState.selectedTeam,
+                avatar: appState.selectedTeam === 'angels' ? '👼' : '😈',
+                status: 'Новичок небесной канцелярии',
+                frameColor: appState.selectedTeam === 'angels' ? '#d4af37' : '#c41e3a',
+                completedTasks: [],
+                points: 0
+            };
+
+            saveToStorage(STORAGE_KEYS.USER, appState.currentUser);
+            
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            
+            loadUserProfile();
+            renderAllTasks();
+            renderFriends();
+            renderLeaderboard();
+        }
+
+        // Profile
+        function loadUserProfile() {
+            const user = appState.currentUser;
+            document.getElementById('profileName').textContent = user.name;
+            document.getElementById('profileStatus').textContent = user.status;
+            document.getElementById('avatar').textContent = user.avatar;
+            document.getElementById('avatarFrame').style.borderColor = user.frameColor;
+            
+            updateProfileStats();
+            renderCompletedTasks();
+
+            // Edit name
+            document.getElementById('profileName').addEventListener('click', function() {
+                const newName = prompt('Введите новое имя:', user.name);
+                if (newName && newName.trim()) {
+                    user.name = newName.trim();
+                    this.textContent = user.name;
+                    saveToStorage(STORAGE_KEYS.USER, user);
+                }
+            });
+
+            // Edit status
+            document.getElementById('profileStatus').addEventListener('click', function() {
+                const newStatus = prompt('Введите новый статус:', user.status);
+                if (newStatus && newStatus.trim()) {
+                    user.status = newStatus.trim();
+                    this.textContent = user.status;
+                    saveToStorage(STORAGE_KEYS.USER, user);
+                }
+            });
+
+            // Change avatar
+            document.getElementById('avatar').addEventListener('click', showAvatarPicker);
+        }
+
+        function updateProfileStats() {
+            const completed = appState.currentUser.completedTasks.length;
+            const points = appState.currentUser.points;
+            
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('totalPoints').textContent = points;
+            
+            // Calculate rank
+            const sortedUsers = [...appState.friends, appState.currentUser]
+                .sort((a, b) => b.points - a.points);
+            const rank = sortedUsers.findIndex(u => u.id === appState.currentUser.id) + 1;
+            document.getElementById('rank').textContent = rank;
+        }
+
+        function renderCompletedTasks() {
+            const container = document.getElementById('completedTasksList');
+            const tasks = appState.currentUser.completedTasks;
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Пока нет выполненных заданий</p>';
+                return;
+            }
+
+            container.innerHTML = tasks.map((task, index) => `
+                <div class="task-item">
+                    <div class="task-header">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-points">+${task.points}</div>
+                    </div>
+                    <div class="task-description ${task.hideDescription ? 'hidden' : ''}" id="taskDesc${index}">
+                        ${task.description}
+                    </div>
+                    <div class="toggle-description" onclick="toggleTaskDescription(${index})">
+                        ${task.hideDescription ? '👁️ Показать' : '👁️‍🗨️ Скрыть'} описание
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleTaskDescription(index) {
+            const task = appState.currentUser.completedTasks[index];
+            task.hideDescription = !task.hideDescription;
+            renderCompletedTasks();
+            saveToStorage(STORAGE_KEYS.USER, appState.currentUser);
+        }
+
+        // Avatar & Frame Color
+        function showAvatarPicker() {
+            const modal = document.getElementById('colorPickerModal');
+            const content = modal.querySelector('.color-picker-content');
+            
+            content.innerHTML = `
+                <h3 class="modal-title">Выберите аватар</h3>
+                <div class="template-avatars">
+                    ${templateAvatars.map(emoji => `
+                        <div class="template-avatar" onclick="selectAvatar('${emoji}')">${emoji}</div>
+                    `).join('')}
+                </div>
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button class="tool-btn" onclick="closeColorPicker()">Закрыть</button>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        function selectAvatar(emoji) {
+            appState.currentUser.avatar = emoji;
+            document.getElementById('avatar').textContent = emoji;
+            saveToStorage(STORAGE_KEYS.USER, appState.currentUser);
+            closeColorPicker();
+        }
+
+        function initColorPicker() {
+            document.getElementById('colorPickerBtn').addEventListener('click', showFrameColorPicker);
+        }
+
+        function showFrameColorPicker() {
+            const modal = document.getElementById('colorPickerModal');
+            const grid = document.getElementById('colorGrid');
+            
+            modal.querySelector('.modal-title').textContent = 'Выберите цвет рамки';
+            grid.innerHTML = frameColors.map(color => `
+                <div class="color-option ${color === appState.currentUser.frameColor ? 'selected' : ''}" 
+                     style="background: ${color};" 
+                     onclick="selectFrameColor('${color}')"></div>
+            `).join('');
+            
+            modal.classList.add('active');
+        }
+
+        function selectFrameColor(color) {
+            appState.currentUser.frameColor = color;
+            document.getElementById('avatarFrame').style.borderColor = color;
+            saveToStorage(STORAGE_KEYS.USER, appState.currentUser);
+            closeColorPicker();
+        }
+
+        function closeColorPicker() {
+            document.getElementById('colorPickerModal').classList.remove('active');
+        }
+
+        // Tasks
+        function renderAllTasks() {
+            const container = document.getElementById('allTasksFeed');
+            const enrolled = appState.enrolledTasks;
+            
+            document.getElementById('enrolledCount').textContent = enrolled.length;
+
+            container.innerHTML = appState.allTasks.map(task => {
+                const isEnrolled = enrolled.includes(task.id);
+                return `
+                    <div class="task-card ${isEnrolled ? 'enrolled' : ''}">
+                        <div class="task-card-header">
+                            <div class="task-info">
+                                <h3>${task.title}</h3>
+                                <div class="task-meta">
+                                    ${task.category} • ${task.points} баллов • ${task.deadline}
+                                </div>
+                            </div>
+                            <button class="task-action" onclick="toggleEnroll(${task.id})" ${enrolled.length >= 3 && !isEnrolled ? 'disabled' : ''}>
+                                ${isEnrolled ? '−' : '+'}
+                            </button>
+                        </div>
+                        <div class="task-card-content">${task.description}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleEnroll(taskId) {
+            const index = appState.enrolledTasks.indexOf(taskId);
+            
+            if (index > -1) {
+                appState.enrolledTasks.splice(index, 1);
+            } else {
+                if (appState.enrolledTasks.length < 3) {
+                    appState.enrolledTasks.push(taskId);
+                }
+            }
+            
+            saveToStorage(STORAGE_KEYS.ENROLLED, appState.enrolledTasks);
+            renderAllTasks();
+            renderMyTasks();
+        }
+
+        function renderMyTasks() {
+            const container = document.getElementById('myTasksFeed');
+            const myTasks = appState.allTasks.filter(t => appState.enrolledTasks.includes(t.id));
+
+            if (myTasks.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Вы не записаны ни на одно задание</p>';
+                return;
+            }
+
+            container.innerHTML = myTasks.map(task => `
+                <div class="task-card enrolled" onclick="showTaskDetail(${task.id})">
+                    <div class="task-card-header">
+                        <div class="task-info">
+                            <h3>${task.title}</h3>
+                            <div class="task-meta">
+                                ${task.category} • ${task.points} баллов
+                            </div>
+                        </div>
+                    </div>
+                    <div class="task-card-content">${task.description}</div>
+                    <div style="margin-top: 1rem; font-size: calc(0.75rem * var(--font-size-multiplier)); color: var(--accent);">
+                        👉 Нажмите для подробностей
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showTaskDetail(taskId) {
+            const task = appState.allTasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const modal = document.getElementById('taskDetailModal');
+            const title = document.getElementById('modalTaskTitle');
+            const body = document.getElementById('modalTaskBody');
+
+            title.textContent = task.title;
+            body.innerHTML = `
+                <div class="detail-section">
+                    <div class="detail-label">Описание</div>
+                    <div class="detail-value">${task.description}</div>
+                </div>
+                
+                <div class="detail-section">
+                    <div class="detail-label">Категория</div>
+                    <div class="detail-value">${task.category}</div>
+                </div>
+                
+                <div class="detail-section">
+                    <div class="detail-label">Баллы</div>
+                    <div class="detail-value">${task.points}</div>
+                </div>
+                
+                <div class="detail-section">
+                    <div class="detail-label">Дедлайн</div>
+                    <div class="detail-value">${task.deadline}</div>
+                </div>
+                
+                ${task.location ? `
+                    <div class="detail-section">
+                        <div class="detail-label">Место выполнения</div>
+                        <div class="detail-value">📍 ${task.location}</div>
+                    </div>
+                ` : ''}
+                
+                ${task.accessCode ? `
+                    <div class="detail-section">
+                        <div class="detail-label">Код доступа</div>
+                        <div class="detail-value">🔑 ${task.accessCode}</div>
+                    </div>
+                ` : ''}
+                
+                <div class="chat-section">
+                    <div class="detail-label">Чат с коллегами</div>
+                    <div class="chat-messages" id="taskChat">
+                        <div class="chat-message">
+                            <div class="message-author">Модератор</div>
+                            <div class="message-text">Добро пожаловать! Здесь вы можете обсудить детали задания с коллегами.</div>
+                        </div>
+                    </div>
+                    <div class="chat-input-group">
+                        <input type="text" class="chat-input" placeholder="Ваше сообщение..." id="chatInput">
+                        <button class="send-btn" onclick="sendChatMessage(${taskId})">➤</button>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function sendChatMessage(taskId) {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                const chatContainer = document.getElementById('taskChat');
+                const messageEl = document.createElement('div');
+                messageEl.className = 'chat-message';
+                messageEl.innerHTML = `
+                    <div class="message-author">${appState.currentUser.name}</div>
+                    <div class="message-text">${message}</div>
+                `;
+                chatContainer.appendChild(messageEl);
+                input.value = '';
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+
+        // Friends & Wall
+        function renderFriends() {
+            const container = document.getElementById('friendsGrid');
+            
+            container.innerHTML = appState.friends.map(friend => `
+                <div class="friend-card" onclick="showFriendProfile(${friend.id})">
+                    <div class="friend-avatar" style="border-color: ${friend.frameColor};">
+                        ${friend.avatar}
+                    </div>
+                    <div class="friend-name">${friend.name}</div>
+                    <div class="friend-role">${friend.team === 'angels' ? '👼 Ангел' : '😈 Демон'}</div>
+                </div>
+            `).join('');
+        }
+
+        function showFriendProfile(friendId) {
+            const friend = appState.friends.find(f => f.id === friendId);
+            if (!friend) return;
+
+            const modal = document.getElementById('friendProfileModal');
+            const body = document.getElementById('friendProfileBody');
+
+            body.innerHTML = `
+                <div class="profile-header">
+                    <div class="avatar-wrapper">
+                        <div class="avatar-frame" style="border-color: ${friend.frameColor};">
+                            <div class="avatar">${friend.avatar}</div>
+                        </div>
+                    </div>
+                    <div class="profile-name">${friend.name}</div>
+                    <div class="profile-status">${friend.status}</div>
+                </div>
+
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">${friend.completedTasks.length}</span>
+                        <span class="stat-label">Выполнено</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">${friend.points}</span>
+                        <span class="stat-label">Баллы</span>
+                    </div>
+                </div>
+
+                <div class="wall-section">
+                    <h3 class="section-title">Стена</h3>
+                    <div class="canvas-tools">
+                        <div class="color-btn active" style="background: #000;" onclick="selectDrawColor('#000')"></div>
+                        <div class="color-btn" style="background: #f00;" onclick="selectDrawColor('#f00')"></div>
+                        <div class="color-btn" style="background: #0f0;" onclick="selectDrawColor('#0f0')"></div>
+                        <div class="color-btn" style="background: #00f;" onclick="selectDrawColor('#00f')"></div>
+                        <div class="color-btn" style="background: #ff0;" onclick="selectDrawColor('#ff0')"></div>
+                        <div class="color-btn" style="background: #f0f;" onclick="selectDrawColor('#f0f')"></div>
+                        <button class="tool-btn" onclick="clearCanvas()">Очистить</button>
+                        <button class="tool-btn" onclick="saveDrawing(${friendId})">Отправить</button>
+                    </div>
+                    <div class="canvas-container">
+                        <canvas class="drawing-canvas" id="drawingCanvas" width="400" height="300"></canvas>
+                    </div>
+                    <div class="wall-posts" id="wallPosts"></div>
+                </div>
+            `;
+
+            modal.classList.add('active');
+            initCanvas();
+            loadWallPosts(friendId);
+        }
+
+        // Canvas Drawing
+        let canvas, ctx, isDrawing = false, currentColor = '#000';
+
+        function initCanvas() {
+            canvas = document.getElementById('drawingCanvas');
+            ctx = canvas.getContext('2d');
+            
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            canvas.addEventListener('touchstart', handleTouch);
+            canvas.addEventListener('touchmove', handleTouch);
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function selectDrawColor(color) {
+            currentColor = color;
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function saveDrawing(friendId) {
+            const imageData = canvas.toDataURL('image/png');
+            const posts = loadFromStorage(`wall_posts_${friendId}`) || [];
+            
+            posts.unshift({
+                id: Date.now(),
+                author: appState.currentUser.name,
+                image: imageData,
+                timestamp: new Date().toLocaleString('ru')
+            });
+            
+            saveToStorage(`wall_posts_${friendId}`, posts);
+            loadWallPosts(friendId);
+            clearCanvas();
+            alert('Рисунок отправлен!');
+        }
+
+        function loadWallPosts(friendId) {
+            const posts = loadFromStorage(`wall_posts_${friendId}`) || [];
+            const container = document.getElementById('wallPosts');
+            
+            if (posts.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Пока нет записей на стене</p>';
+                return;
+            }
+            
+            container.innerHTML = posts.map(post => `
+                <div class="wall-post">
+                    <div class="post-author">${post.author}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary);">${post.timestamp}</div>
+                    <img src="${post.image}" class="post-image" alt="Drawing">
+                </div>
+            `).join('');
+        }
+
+        // Leaderboard
+        function renderLeaderboard() {
+            const allUsers = [...appState.friends, appState.currentUser]
+                .sort((a, b) => b.points - a.points);
+
+            const container = document.getElementById('leaderboardList');
+            container.innerHTML = allUsers.map((user, index) => `
+                <div class="leaderboard-item ${user.id === appState.currentUser.id ? 'enrolled' : ''}">
+                    <div class="rank">${index + 1}</div>
+                    <div class="user-info">
+                        <div class="user-avatar-small" style="border-color: ${user.frameColor};">
+                            ${user.avatar}
+                        </div>
+                        <div class="user-name">${user.name}</div>
+                    </div>
+                    <div class="score">${user.points}</div>
+                </div>
+            `).join('');
+
+            updateTeamBattle(allUsers);
+        }
+
+        function updateTeamBattle(users) {
+            const angelsPoints = users.filter(u => u.team === 'angels').reduce((sum, u) => sum + u.points, 0);
+            const demonsPoints = users.filter(u => u.team === 'demons').reduce((sum, u) => sum + u.points, 0);
+            const total = angelsPoints + demonsPoints || 1;
+
+            const angelsPercent = (angelsPoints / total) * 100;
+            const demonsPercent = (demonsPoints / total) * 100;
+
+            document.getElementById('angelsBar').style.width = angelsPercent + '%';
+            document.getElementById('demonsBar').style.width = demonsPercent + '%';
+            document.getElementById('angelsScore').textContent = angelsPoints;
+            document.getElementById('demonsScore').textContent = demonsPoints;
+        }
+
+        // Settings
+        function initSettings() {
+            document.getElementById('settingsIcon').addEventListener('click', () => {
+                document.getElementById('settingsPanel').classList.add('active');
+            });
+
+            document.getElementById('closeSettings').addEventListener('click', () => {
+                document.getElementById('settingsPanel').classList.remove('active');
+            });
+
+            // Theme switcher
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const theme = this.dataset.theme;
+                    document.body.className = document.body.className.replace(/theme-\w+/, `theme-${theme}`);
+                    appState.theme = theme;
+                    saveToStorage('settings', { theme, fontSize: appState.fontSize });
+                });
+            });
+
+            // Font size switcher
+            document.querySelectorAll('.font-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.font-option').forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const size = this.dataset.size;
+                    document.body.className = document.body.className.replace(/font-\w+/, `font-${size}`);
+                    appState.fontSize = size;
+                    saveToStorage('settings', { theme: appState.theme, fontSize: size });
+                });
+            });
+
+            // Load saved settings
+            const settings = loadFromStorage('settings');
+            if (settings) {
+                document.body.className = `theme-${settings.theme} font-${settings.fontSize}`;
+                appState.theme = settings.theme;
+                appState.fontSize = settings.fontSize;
+            }
+        }
+
+        // Navigation
+        function initNavigation() {
+            const navItems = document.querySelectorAll('.nav-item');
+            const feedTabs = document.querySelectorAll('.feed-tab');
+
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    navItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const tab = this.dataset.tab;
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    document.getElementById(tab + 'Tab').classList.add('active');
+                });
+            });
+
+            feedTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    feedTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const feed = this.dataset.feed;
+                    if (feed === 'all') {
+                        document.getElementById('allTasksFeed').style.display = 'block';
+                        document.getElementById('myTasksFeed').style.display = 'none';
+                    } else {
+                        document.getElementById('allTasksFeed').style.display = 'none';
+                        document.getElementById('myTasksFeed').style.display = 'block';
+                        renderMyTasks();
+                    }
+                });
+            });
+
+            // Close modals
+            document.getElementById('closeTaskModal').addEventListener('click', () => {
+                document.getElementById('taskDetailModal').classList.remove('active');
+            });
+
+            document.getElementById('closeFriendModal').addEventListener('click', () => {
+                document.getElementById('friendProfileModal').classList.remove('active');
+            });
+        }
+
+        // Storage
+        function saveToStorage(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error('Storage error:', e);
+            }
+        }
+
+        function loadFromStorage(key) {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : null;
+            } catch (e) {
+                console.error('Storage error:', e);
+                return null;
+            }
+        }
+
+        // Mock Data
+        function generateMockData() {
+            // Tasks
+            appState.allTasks = [
+                {
+                    id: 1,
+                    title: 'Организовать встречу команды',
+                    description: 'Подготовить повестку и пригласить всех участников на еженедельную встречу команды',
+                    category: 'Менеджмент',
+                    points: 50,
+                    deadline: '15.02.2026',
+                    location: 'Офис 02',
+                    accessCode: '47748'
+                },
+                {
+                    id: 2,
+                    title: 'Написать отчёт по проекту',
+                    description: 'Составить подробный отчёт о прогрессе текущего проекта для руководства',
+                    category: 'Документация',
+                    points: 75,
+                    deadline: '20.02.2026'
+                },
+                {
+                    id: 3,
+                    title: 'Провести код-ревью',
+                    description: 'Проверить и прокомментировать код нового модуля',
+                    category: 'Разработка',
+                    points: 60,
+                    deadline: '12.02.2026',
+                    location: 'Удалённо'
+                },
+                {
+                    id: 4,
+                    title: 'Подготовить презентацию',
+                    description: 'Создать презентацию о достижениях команды за квартал',
+                    category: 'Дизайн',
+                    points: 85,
+                    deadline: '25.02.2026'
+                },
+                {
+                    id: 5,
+                    title: 'Обновить документацию API',
+                    description: 'Актуализировать документацию API после последних изменений',
+                    category: 'Документация',
+                    points: 40,
+                    deadline: '18.02.2026'
+                }
+            ];
+
+            // Friends
+            appState.friends = [
+                {
+                    id: 101,
+                    name: 'Анна Светлова',
+                    username: 'anna_s',
+                    team: 'angels',
+                    avatar: '👼',
+                    status: 'Старший менеджер',
+                    frameColor: '#d4af37',
+                    completedTasks: [
+                        { title: 'Организация мероприятия', points: 100, description: 'Успешно провели корпоратив' }
+                    ],
+                    points: 450
+                },
+                {
+                    id: 102,
+                    name: 'Дмитрий Тёмный',
+                    username: 'dmitry_t',
+                    team: 'demons',
+                    avatar: '😈',
+                    status: 'Ведущий разработчик',
+                    frameColor: '#c41e3a',
+                    completedTasks: [
+                        { title: 'Оптимизация системы', points: 120, description: 'Ускорили работу на 30%' }
+                    ],
+                    points: 520
+                },
+                {
+                    id: 103,
+                    name: 'Елена Яркая',
+                    username: 'elena_y',
+                    team: 'angels',
+                    avatar: '⭐',
+                    status: 'Дизайнер',
+                    frameColor: '#4a90e2',
+                    completedTasks: [],
+                    points: 280
+                },
+                {
+                    id: 104,
+                    name: 'Михаил Грозный',
+                    username: 'mikhail_g',
+                    team: 'demons',
+                    avatar: '🔥',
+                    status: 'Тестировщик',
+                    frameColor: '#e74c3c',
+                    completedTasks: [],
+                    points: 310
+                },
+                {
+                    id: 105,
+                    name: 'Ольга Сияющая',
+                    username: 'olga_s',
+                    team: 'angels',
+                    avatar: '✨',
+                    status: 'Аналитик',
+                    frameColor: '#9b59b6',
+                    completedTasks: [],
+                    points: 395
+                }
+            ];
+
+            saveToStorage(STORAGE_KEYS.TASKS, appState.allTasks);
+            saveToStorage(STORAGE_KEYS.FRIENDS, appState.friends);
+        }
+    </script>
+</body>
+</html>
